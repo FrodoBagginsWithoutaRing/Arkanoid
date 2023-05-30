@@ -1,0 +1,116 @@
+from tkinter import *
+import random
+
+window = Tk()
+window.title("JUST GAME")
+
+canvas_width = 500
+canvas_height = 500
+canvas = Canvas(window, width=canvas_width, height=canvas_height, bg="magenta")
+canvas.pack()
+
+paddle_width = 80
+paddle_height = 10
+paddle_x = canvas_width // 2 - paddle_width // 2
+paddle = canvas.create_rectangle(paddle_x,canvas_height - paddle_height - 20,paddle_x + paddle_width,canvas_height - 20,fill="pink")
+
+ball_radius = 10
+ball_x = random.randint(ball_radius, canvas_width - ball_radius)
+ball_y = canvas_height // 2
+ball_dx = random.choice([-2, 2])
+ball_dy = -2
+ball_colour=["red", "orange", "yellow", "green", "blue", "magenta", "turqoise", "pink", "black"]
+ball = canvas.create_oval(ball_x - ball_radius,ball_y - ball_radius,ball_x + ball_radius,ball_y + ball_radius,fill="white")
+
+brick_rows = 5
+brick_cols = 8
+brick_width = canvas_width // brick_cols
+brick_height = 20
+brick_color = ["red", "orange", "yellow", "green", "blue"]
+bricks = []
+
+# Create bricks
+for row in range(brick_rows):
+    for col in range(brick_cols):
+        brick_x = col * brick_width
+        brick_y = row * brick_height
+        brick = canvas.create_rectangle(brick_x, brick_y,brick_x + brick_width,brick_y + brick_height,fill=random.choice(brick_color),)
+        bricks.append(brick)
+
+game_over = False
+
+def move_ball():
+    global ball_x, ball_y, ball_dx, ball_dy, game_over
+
+    ball_x += ball_dx
+    ball_y += ball_dy
+
+    if ball_x < ball_radius or ball_x > canvas_width - ball_radius:
+        ball_dx *= -1
+    if ball_y < ball_radius:
+        ball_dy *= -1
+
+    paddle_coords = canvas.coords(paddle)
+    paddle_left = paddle_coords[0]
+    paddle_right = paddle_coords[2]
+    paddle_top = paddle_coords[1]
+    paddle_bottom = paddle_coords[3]
+
+    if (ball_y + ball_radius >= paddle_top and ball_y <= paddle_bottom and ball_x >= paddle_left and ball_x <= paddle_right):
+        ball_dy *= -1
+
+
+    for brick in bricks:
+        brick_coords = canvas.coords(brick)
+        if (ball_y - ball_radius <= brick_coords[3]and ball_x >= brick_coords[0] and ball_x <= brick_coords[2]):
+            ball_dy *= -1
+            brick_color = canvas.itemcget(brick, "fill")
+            if brick_color == "red":
+                #FaF36
+                ball_dx *= 1.5
+                ball_dy *= 1.5
+            elif brick_color == "blue":
+                # Spomal máš privysoku rychlost
+                ball_dx *= 0.5
+                ball_dy *= 0.5
+            elif brick_color == "yellow":
+                #Baf1
+                canvas.configure(background=ball_colour[random.randrange(0,6)])
+            elif brick_color == "orange":
+                # Baf2
+                canvas.itemconfigure(ball, fill=ball_colour[random.randrange(0,6)])
+            elif brick_color == "green":
+                ball_dx *= 1.1
+                ball_dy *= 1.1
+            canvas.delete(brick)
+            bricks.remove(brick)
+            break
+    canvas.move(ball, ball_dx, ball_dy)
+
+
+    if ball_y > canvas_height:
+        game_over = True
+        canvas.create_text(canvas_width // 2,canvas_height // 2,text="You lost!",fill="red",font=("Helvetica", 30))
+
+    if len(bricks) == 0:
+        game_over = True
+        canvas.create_text(canvas_width // 2,canvas_height // 2,text="Vyhral si ty šikulák!",fill="green",font=("Arial", 30))
+
+    if not game_over:
+        window.after(10, move_ball)
+
+def move_paddle(event):
+    global paddle_x
+
+    if event.keysym == "Left" and paddle_x > 0:
+        paddle_x -= 20
+    elif event.keysym == "Right" and paddle_x < canvas_width - paddle_width:
+        paddle_x += 20
+
+    canvas.coords(paddle,paddle_x,canvas_height - paddle_height - 20,paddle_x + paddle_width,canvas_height - 20,)
+window.bind("<KeyPress-Left>", move_paddle)
+window.bind("<KeyPress-Right>", move_paddle)
+move_ball()
+
+
+window.mainloop()
